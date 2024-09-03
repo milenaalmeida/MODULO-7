@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .form-group button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        .message {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pet Management</h1>
+        <div id="message" class="message" style="display: none;"></div>
+
+        <h2>Register</h2>
+        <div class="form-group">
+            <label for="register-username">Username</label>
+            <input type="text" id="register-username">
+        </div>
+        <div class="form-group">
+            <label for="register-password">Password</label>
+            <input type="password" id="register-password">
+        </div>
+        <div class="form-group">
+            <button id="register-btn">Register</button>
+        </div>
+
+        <h2>Login</h2>
+        <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username">
+        </div>
+        <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password">
+        </div>
+        <div class="form-group">
+            <button id="login-btn">Login</button>
+        </div>
+
+        <h2>Add Pet</h2>
+        <div class="form-group">
+            <label for="pet-name">Name</label>
+            <input type="text" id="pet-name">
+        </div>
+        <div class="form-group">
+            <label for="pet-age">Age</label>
+            <input type="number" id="pet-age">
+        </div>
+        <div class="form-group">
+            <label for="pet-type">Type</label>
+            <input type="text" id="pet-type">
+        </div>
+        <div class="form-group">
+            <label for="pet-owner">Owner</label>
+            <input type="text" id="pet-owner">
+        </div>
+        <div class="form-group">
+            <button id="add-pet-btn">Add Pet</button>
+        </div>
+
+        <h2>Pets List</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Type</th>
+                    <th>Owner</th>
+                </tr>
+            </thead>
+            <tbody id="pets-list"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const messageElement = document.getElementById('message');
+
+        function showMessage(message, error = false) {
+            messageElement.textContent = message;
+            messageElement.className = error ? 'message error' : 'message';
+            messageElement.style.display = 'block';
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+            }, 5000);
+        }
+
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const response = await fetch('http://localhost:8000/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                showMessage(data.message || data.error, !response.ok);
+            } catch (error) {
+                showMessage('Error: ' + error.message, true);
+            }
+        });
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const response = await fetch('http://localhost:8000/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    showMessage('Login successful!');
+                    loadPets();
+                } else {
+                    showMessage(data.error, true);
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, true);
+            }
+        });
+
+        document.getElementById('add-pet-btn').addEventListener('click', async () => {
+            const name = document.getElementById('pet-name').value;
+            const age = document.getElementById('pet-age').value;
+            const type = document.getElementById('pet-type').value;
+            const owner = document.getElementById('pet-owner').value;
+
+            try {
+                const response = await fetch('http://localhost:8000/pets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ name, age, type, owner })
+                });
+
+                const data = await response.json();
+                showMessage(data.message || data.error, !response.ok);
+                if (response.ok) loadPets();
+            } catch (error) {
+                showMessage('Error: ' + error.message, true);
+            }
+        });
+
+        async function loadPets() {
+            try {
+                const response = await fetch('http://localhost:8000/pets', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const pets = await response.json();
+                const petsList = document.getElementById('pets-list');
+                petsList.innerHTML = '';
+                pets.forEach(pet => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${pet.id}</td>
+                        <td>${pet.name}</td>
+                        <td>${pet.age}</td>
+                        <td>${pet.type}</td>
+                        <td>${pet.owner}</td>
+                    `;
+                    petsList.appendChild(row);
+                });
+            } catch (error) {
+                showMessage('Error: ' + error.message, true);
+            }
+        }
+
+        // Load pets on page load if logged in
+        if (localStorage.getItem('token')) {
+            loadPets();
+        }
+    </script>
+</body>
+</html>
