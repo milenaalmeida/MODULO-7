@@ -16,7 +16,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
 // Definimos a porta em que o servidor irá rodar
-const port = 8000;
+const port = $PORT;
 
 // Usamos o middleware CORS para permitir requisições de qualquer origem
 app.use(cors());
