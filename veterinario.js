@@ -238,8 +238,9 @@ app.post('/pets/:id/image', authenticateToken, (req, res) => {
 });
 
 // Iniciamos o servidor e fazemos com que ele escute na porta definida
-app.listen(port, () => {
-  console.log(`Servidor rodando em http://localhost:${port}`);
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
 
 
