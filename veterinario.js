@@ -14,6 +14,8 @@ const db = require('./database');
 // Configuração do Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+const PORT = process.env.PORT || 8000; // Usa a variável de ambiente PORT se disponível, caso contrário, usa 8000.
+
 
 // Definimos a porta em que o servidor irá rodar
 const port = $PORT;
