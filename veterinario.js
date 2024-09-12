@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const argon2 = require('argon2');
+const multer = require('multer');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger_output.json');
@@ -10,6 +11,21 @@ const swaggerDocument = require('./swagger_output.json');
 const app = express();
 // Importar a configuração do banco de dados
 const db = require('./database');
+
+// Configuração do multer para armazenar os arquivos no disco
+const storage = multer.diskStorage({
+  // Definimos o diretório onde as imagens serão salvas
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Aqui indicamos a pasta 'uploads' para armazenar os arquivos
+  },
+  // Definimos o nome do arquivo para evitar conflitos (usamos a data atual + o nome original do arquivo)
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`); // Nome do arquivo será a data + nome original do arquivo
+  }
+});
+
+// criando uma instancia do multer com a config de armazenamento
+const upload = multer({storage});
 
 // Configuração do Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -42,6 +58,35 @@ const authenticateToken = (req, res, next) => {
     next(); // Continua para a próxima função de middleware ou rota
   });
 };
+
+// Servir arquivos estáticos da pasta uploads
+app.use('/uploads', express.static('uploads'));
+
+
+app.post('/pets/:id/upload', authenticateToken, upload.single('image'),  (req, res)=>{
+  const id = parseInt(req.params.id, 10);
+
+  const imagePath = req.file ? req.file.path : null;
+
+  if(!imagePath){
+    return res.status(400).json({error: 'Nenhuma imagem enviada'});
+  }
+
+  db.run('UPDATE pets SET image = ? WHERE id = ?', [imagePath, id], function(err){
+    if(err){
+      return res.status(500).json({error: 'Erro ao atualizar imagem do pet'});
+    }
+
+    if(this.changes > 0){
+      res.status(201).json({id, image: imagePath});
+    }else{
+      res.status(404).json({error:'Pet não encontrado'});
+    }
+  })
+
+})
+
+
 
 // Rota para registrar um novo usuário
 app.post('/register', async (req, res) => {
